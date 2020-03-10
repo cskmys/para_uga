@@ -8,38 +8,14 @@ PEDANTIC_PARANOID_FREAK = -g3 -O0 -Wall -Wshadow -Wcast-align \
 CFLAGS = -fopenmp $(PEDANTIC_PARANOID_FREAK)
 LDFLAGS = -fopenmp
 
-EXEC = 	bubble.run	\
-	qsort.run	\
-	mergesort.run
-
-
-HEADER_FILES = $(wildcard *.h)
-
-RAND_INIT=0
-
-ifdef p
-$(info Test focus on parallel)
-CONFIG_FLAGS += -DTEST_ONLY_PARA
-endif
-
-ifdef r
-$(info Initialization of the vector is random)
-CONFIG_FLAGS += -DRINIT
-else
-RAND_INIT=0
-ifeq ($(RAND_INIT), 1)
-$(info Initialization of the vector is random)
-CONFIG_FLAGS += -DRINIT
-endif
-endif
-
+EXEC = 	triangular_matrix.run
 
 all: $(EXEC)
 
-%.run: %.o utils.o
+%.run: %.o
 	$(CC) $(LDFLAGS) -o $@ $^
 
-%.o: %.c $(HEADER_FILES)
+%.o: %.c
 	$(CC) -c $(CONFIG_FLAGS) $(CFLAGS) $< -o $@
 
 clean:

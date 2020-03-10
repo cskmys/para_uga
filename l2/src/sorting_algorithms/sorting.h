@@ -1,6 +1,9 @@
 #ifndef __SORTING_H__
 #define __SORTING_H__
 
+#ifdef TEST_ONLY_PARA
+#define TEST_ONLY_PARA_N 4
+#endif
 
 #define NBEXPERIMENTS    10
 long long unsigned int experiments [NBEXPERIMENTS] ;
