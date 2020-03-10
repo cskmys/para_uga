@@ -17,7 +17,7 @@ int are_vector_equals (uint64_t *T1, uint64_t *T2, uint64_t size);
 
 /* return the average time in cycles over the values stored in
  * experiments vector */
-uint64_t average_time();
+uint64_t average_time( void );
 
 
 

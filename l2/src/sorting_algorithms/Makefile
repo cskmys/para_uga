@@ -1,5 +1,10 @@
 CC = gcc
-CFLAGS = -O2 -fopenmp
+GIVEN_FLAGS = -O2
+PEDANTIC_PARANOID_FREAK = -g3 -O0 -Wall -Wshadow -Wcast-align \
+				-Waggregate-return -Wstrict-prototypes \
+				-Wredundant-decls -Wnested-externs \
+				-Wpointer-arith -Wwrite-strings -finline-functions -Werror
+CFLAGS = -fopenmp $(PEDANTIC_PARANOID_FREAK)
 LDFLAGS = -fopenmp
 
 EXEC = 	bubble.run	\

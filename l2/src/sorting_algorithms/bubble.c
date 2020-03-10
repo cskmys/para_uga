@@ -10,11 +10,21 @@
 /* 
    bubble sort -- sequential, parallel -- 
 */
-
+#include<stdint.h>
 void sequential_bubble_sort (uint64_t *T, const uint64_t size)
 {
-    /* TODO: sequential implementation of bubble sort */ 
-    
+    char sorted;
+    do {
+        sorted = 1;
+        for (int i = 0; i < size; ++i) {
+            if(T[i] > T[i+1]){
+                T[i] = T[i] ^ T[i+1]; // using XOR cause elements we are swapping are numbers of same size
+                T[i+1] = T[i+1] ^ T[i];
+                T[i] = T[i] ^ T[i+1];
+                sorted = 0;
+            }
+        }
+    } while(sorted == 0);
     return ;
 }
 
@@ -48,7 +58,7 @@ int main (int argc, char **argv)
 #ifdef RINIT
     printf("--> The array is initialized randomly\n");
 #endif
-    
+
 
     for (exp = 0 ; exp < NBEXPERIMENTS; exp++){
 #ifdef RINIT
@@ -56,12 +66,12 @@ int main (int argc, char **argv)
 #else
         init_array_sequence (X, N);
 #endif
-        
-      
+
+
         start = _rdtsc () ;
-        
+
         sequential_bubble_sort (X, N) ;
-     
+
         end = _rdtsc () ;
         experiments [exp] = end - start ;
 
@@ -79,15 +89,15 @@ int main (int argc, char **argv)
             fprintf(stderr, "ERROR: the sequential sorting of the array failed\n") ;
             print_array (X, N) ;
             exit (-1) ;
-	}
+        }
 #endif
     }
 
-    av = average_time() ;  
+    av = average_time() ;
 
     printf ("\n bubble serial \t\t\t %.2lf Mcycles\n\n", (double)av/1000000) ;
 
-  
+
     for (exp = 0 ; exp < NBEXPERIMENTS; exp++)
     {
 #ifdef RINIT
@@ -95,11 +105,11 @@ int main (int argc, char **argv)
 #else
         init_array_sequence (X, N);
 #endif
-        
+
         start = _rdtsc () ;
 
         parallel_bubble_sort (X, N) ;
-     
+
         end = _rdtsc () ;
         experiments [exp] = end - start ;
 
@@ -115,15 +125,15 @@ int main (int argc, char **argv)
         {
             fprintf(stderr, "ERROR: the parallel sorting of the array failed\n") ;
             exit (-1) ;
-	}
+        }
 #endif
-                
-        
+
+
     }
-    
-    av = average_time() ;  
+
+    av = average_time() ;
     printf ("\n bubble parallel \t\t %.2lf Mcycles\n\n", (double)av/1000000) ;
-  
+
     /* print_array (X, N) ; */
 
     /* before terminating, we run one extra test of the algorithm */
@@ -150,5 +160,5 @@ int main (int argc, char **argv)
     free(X);
     free(Y);
     free(Z);
-    
+
 }

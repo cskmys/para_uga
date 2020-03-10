@@ -2,6 +2,7 @@
 #include <omp.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include <x86intrin.h>
 
@@ -10,17 +11,15 @@
 
 static int compare (const void *x, const void *y)
 {
-    /* TODO: comparison function to be used by qsort()*/
-
     /* cast x and y to uint64_t* before comparing */
-    
+    uint64_t xVal = *((uint64_t*)x);
+    uint64_t yVal = *((uint64_t*)y);
+    return xVal - yVal;
 }
 
 void sequential_qsort_sort (uint64_t *T, const int size)
 {
-
-    /* TODO: sequential sorting based on libc qsort() function */
-  
+    qsort(T, size, sizeof(uint64_t), compare);
     return ;
 }
 
@@ -31,46 +30,46 @@ void sequential_qsort_sort (uint64_t *T, const int size)
 */
 void merge (uint64_t *T, const uint64_t size)
 {
-  uint64_t *X = (uint64_t *) malloc (2 * size * sizeof(uint64_t)) ;
-  
-  uint64_t i = 0 ;
-  uint64_t j = size ;
-  uint64_t k = 0 ;
-  
-  while ((i < size) && (j < 2*size))
+    uint64_t *X = (uint64_t *) malloc (2 * size * sizeof(uint64_t)) ;
+
+    uint64_t i = 0 ;
+    uint64_t j = size ;
+    uint64_t k = 0 ;
+
+    while ((i < size) && (j < 2*size))
     {
-      if (T[i] < T [j])
-	{
-	  X [k] = T [i] ;
-	  i = i + 1 ;
-	}
-      else
-	{
-	  X [k] = T [j] ;
-	  j = j + 1 ;
-	}
-      k = k + 1 ;
+        if (T[i] < T [j])
+        {
+            X [k] = T [i] ;
+            i = i + 1 ;
+        }
+        else
+        {
+            X [k] = T [j] ;
+            j = j + 1 ;
+        }
+        k = k + 1 ;
     }
 
-  if (i < size)
+    if (i < size)
     {
-      for (; i < size; i++, k++)
-	{
-	  X [k] = T [i] ;
-	}
+        for (; i < size; i++, k++)
+        {
+            X [k] = T [i] ;
+        }
     }
-  else
+    else
     {
-      for (; j < 2*size; j++, k++)
-	{
-	  X [k] = T [j] ;
-	}
+        for (; j < 2*size; j++, k++)
+        {
+            X [k] = T [j] ;
+        }
     }
-  
-  memcpy (T, X, 2*size*sizeof(uint64_t)) ;
-  free (X) ;
-  
-  return ;
+
+    memcpy (T, X, 2*size*sizeof(uint64_t)) ;
+    free (X) ;
+
+    return ;
 }
 
 
@@ -115,7 +114,7 @@ int main (int argc, char **argv)
 #ifdef RINIT
     printf("--> The array is initialized randomly\n");
 #endif
-    
+
 
     for (exp = 0 ; exp < NBEXPERIMENTS; exp++){
 #ifdef RINIT
@@ -123,12 +122,12 @@ int main (int argc, char **argv)
 #else
         init_array_sequence (X, N);
 #endif
-        
-      
+
+
         start = _rdtsc () ;
-        
+
         sequential_qsort_sort (X, N) ;
-     
+
         end = _rdtsc () ;
         experiments [exp] = end - start ;
 
@@ -146,15 +145,15 @@ int main (int argc, char **argv)
             fprintf(stderr, "ERROR: the sequential sorting of the array failed\n") ;
             print_array (X, N) ;
             exit (-1) ;
-	}
+        }
 #endif
     }
 
-    av = average_time() ;  
+    av = average_time() ;
 
     printf ("\n qsort serial \t\t\t %.2lf Mcycles\n\n", (double)av/1000000) ;
 
-  
+
     for (exp = 0 ; exp < NBEXPERIMENTS; exp++)
     {
 #ifdef RINIT
@@ -162,12 +161,12 @@ int main (int argc, char **argv)
 #else
         init_array_sequence (X, N);
 #endif
-        
+
         start = _rdtsc () ;
-        
+
         parallel_qsort_sort (X, N) ;
 
-     
+
         end = _rdtsc () ;
         experiments [exp] = end - start ;
 
@@ -183,13 +182,13 @@ int main (int argc, char **argv)
         {
             fprintf(stderr, "ERROR: the parallel sorting of the array failed\n") ;
             exit (-1) ;
-	}
+        }
 #endif
-                
-        
+
+
     }
-    
-    av = average_time() ;  
+
+    av = average_time() ;
     printf ("\n qsort parallel (merge seq) \t\t %.2lf Mcycles\n\n", (double)av/1000000) ;
 
     for (exp = 0 ; exp < NBEXPERIMENTS; exp++)
@@ -199,11 +198,11 @@ int main (int argc, char **argv)
 #else
         init_array_sequence (X, N);
 #endif
-        
+
         start = _rdtsc () ;
 
         parallel_qsort_sort1 (X, N) ;
-     
+
         end = _rdtsc () ;
         experiments [exp] = end - start ;
 
@@ -219,13 +218,13 @@ int main (int argc, char **argv)
         {
             fprintf(stderr, "ERROR: the parallel sorting of the array failed\n") ;
             exit (-1) ;
-	}
+        }
 #endif
-                
-        
+
+
     }
-    
-    av = average_time() ;  
+
+    av = average_time() ;
     printf ("\n qsort parallel \t\t %.2lf Mcycles\n\n", (double)av/1000000) ;
 
     /* before terminating, we run one extra test of the algorithm */
@@ -252,5 +251,5 @@ int main (int argc, char **argv)
     free(X);
     free(Y);
     free(Z);
-    
+
 }
