@@ -7,31 +7,58 @@
 
 #include "sorting.h"
 
+bool comp_and_swap(uint64_t *T1, uint64_t *T2){
+	bool ret = false;
+	if(*T1 > *T2){
+		uint64_t temp = *T1;
+		*T1 = *T2;
+		*T2 = temp;
+		ret = true;
+	}
+#ifdef PRINT_INT
+	printf("%lu %lu %d\n", *T1, *T2, ret);
+#endif
+	return ret;
+}
 
-
+bool do_one_bubble( uint64_t *T, const uint64_t size ){
+#ifdef PRINT_INT
+	print_array (T, size) ;
+#endif
+	bool sorted = true;
+	for (int i = 0; i < size - 1; ++i) {
+		sorted &= !comp_and_swap(&T[i], &T[i+1]);
+	}
+#ifdef PRINT_INT
+	print_array (T, size) ;
+#endif
+	return sorted;
+}
 /* 
    bubble sort -- sequential, parallel -- 
  */
 void sequential_bubble_sort (uint64_t *T, const uint64_t size)
 {
-	bool sorted;
-	do {
-		sorted = true;
-		for (int i = 0; i < size; ++i) {
-			if(T[i] > T[i+1]){
-				uint64_t temp = T[i]; // using XOR cause elements we are swapping are numbers of same size
-				T[i] = T[i+1];
-				T[i+1] = temp;
-				sorted = false;
-			}
-		}
-	} while(sorted == false);
+	while(do_one_bubble(T, size) == false);
 	return ;
 }
 
-void parallel_bubble_sort (uint64_t *T, const uint64_t size)
+void parallel_bubble_sort (uint64_t *T, const uint64_t size, const uint64_t blkSiz)
 {
-
+	int sorted = 0;
+	int nbUnit = size/blkSiz;
+	while(sorted == 0){
+		sorted = 1;
+		for(int i = 0; i < nbUnit; ++i){
+			uint64_t *cur = &T[i*blkSiz];
+			sorted *= (int) do_one_bubble(cur, blkSiz);
+		}
+		for(int i = 0; i < nbUnit - 1; ++i){
+			uint64_t *nxtBlkStart = &T[(i+1)*blkSiz];
+			uint64_t *prevBlkEnd = nxtBlkStart - 1;
+			sorted *= (int)!comp_and_swap(prevBlkEnd, nxtBlkStart);
+		}
+	}
 	return;
 }
 
@@ -44,13 +71,19 @@ int main (int argc, char **argv)
 
 	/* the program takes one parameter N which is the size of the array to
        be sorted. The array will have size 2^N */
-	if (argc != 2)
+	if (argc != 3)
 	{
-		fprintf (stderr, "bubble.run N \n") ;
+		fprintf (stderr, "bubble.run N(lg(array size)) L(lg(block size)) \n") ;
 		exit (-1) ;
 	}
 
 	uint64_t N = 1 << (atoi(argv[1])) ;
+	uint64_t L = 1 << (atoi(argv[2])) ; // to keep code simple we assume both params are powers of 2
+
+	if(N <= L){
+		fprintf (stderr, "provide an array size > block size \n") ;
+		exit (-1) ;
+	}
 	/* the array to be sorted */
 	uint64_t *X = (uint64_t *) malloc (N * sizeof(uint64_t)) ;
 
@@ -112,7 +145,7 @@ int main (int argc, char **argv)
 
 		start = _rdtsc () ;
 
-		parallel_bubble_sort (X, N) ;
+		parallel_bubble_sort (X, N, L) ;
 
 		end = _rdtsc () ;
 		experiments [exp] = end - start ;
@@ -122,12 +155,14 @@ int main (int argc, char **argv)
 		if (! is_sorted (X, N))
 		{
 			fprintf(stderr, "ERROR: the parallel sorting of the array failed\n") ;
+			print_array (X, N) ;
 			exit (-1) ;
 		}
 #else
 		if (! is_sorted_sequence (X, N))
 		{
 			fprintf(stderr, "ERROR: the parallel sorting of the array failed\n") ;
+			print_array (X, N) ;
 			exit (-1) ;
 		}
 #endif
@@ -153,10 +188,12 @@ int main (int argc, char **argv)
 	memcpy(Z, Y, N * sizeof(uint64_t));
 
 	sequential_bubble_sort (Y, N) ;
-	parallel_bubble_sort (Z, N) ;
+	parallel_bubble_sort (Z, N, L) ;
 
 	if (! are_vector_equals (Y, Z, N)) {
 		fprintf(stderr, "ERROR: sorting with the sequential and the parallel algorithm does not give the same result\n") ;
+		print_array (Y, N) ;
+		print_array (Z, N) ;
 		exit (-1) ;
 	}
 

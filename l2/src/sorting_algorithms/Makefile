@@ -22,6 +22,11 @@ $(info Test focus on parallel)
 CONFIG_FLAGS += -DTEST_ONLY_PARA
 endif
 
+ifdef v
+$(info Print intermediate results)
+CONFIG_FLAGS += -DPRINT_INT
+endif
+
 ifdef r
 $(info Initialization of the vector is random)
 CONFIG_FLAGS += -DRINIT
