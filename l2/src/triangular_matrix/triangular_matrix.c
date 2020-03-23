@@ -9,7 +9,8 @@
 static long long unsigned int experiments [NBEXPERIMENTS] ;
 
 #define N              1024
-#define CHUNK             4
+#define CHUNK             16
+#define NB_OF_THREADS     8
 
 
 typedef double vector [N] ;
@@ -129,9 +130,10 @@ void mult_mat_vector_tri_inf1 (matrix Mat, vector b, vector c)
       this function is parallel (with OpenMP directive, static scheduling)
        Computes the Multiplication between the vector b and the Triangular Lower Matrix
 	 */
+	register double total=0.0;
+#pragma omp parallel for schedule(static) reduction (+:total) num_threads(NB_OF_THREADS)
 	for (register int i = 0; i < N; ++i) {
-		register double total = 0.0;
-#pragma omp parallel for schedule(static) reduction (+:total)
+		 total = 0.0;
 		for (register int j = 0; j <= i; ++j) {
 			total += Mat[i][j] * b[j];
 		}
@@ -146,11 +148,11 @@ void mult_mat_vector_tri_inf2 (matrix Mat, vector b, vector c)
       this function is parallel (with OpenMP directive, dynamic scheduling)
        Computes the Multiplication between the vector b and the Triangular Lower Matrix
 	 */
+	register double total=0.0;
+#pragma omp parallel for schedule(dynamic,CHUNK) reduction (+:total) num_threads(2)
 	for (register int i = 0; i < N; ++i) {
-		register double total = 0.0;
-#pragma omp parallel for schedule(dynamic, CHUNK) reduction (+:total)
+		 total = 0.0;
 		for (register int j = 0; j <= i; ++j) {
-
 			total += Mat[i][j] * b[j];
 		}
 		c[i] = total;
@@ -164,9 +166,10 @@ void mult_mat_vector_tri_inf3 (matrix Mat, vector b, vector c)
       this function is parallel (with OpenMP directive, guided scheduling)
       Computes the Multiplication between the vector b and the Triangular Lower Matrix
 	 */
+	register double total=0.0;
+#pragma omp parallel for schedule(guided) reduction (+:total)  num_threads(2)
 	for (register int i = 0; i < N; ++i) {
-		register double total = 0.0;
-#pragma omp parallel for schedule(guided) reduction (+:total)
+		 total = 0.0;
 		for (register int j = 0; j <= i; ++j) {
 			total += Mat[i][j] * b[j];
 		}
@@ -181,9 +184,10 @@ void mult_mat_vector_tri_inf4 (matrix Mat, vector b, vector c)
       this function is parallel (with OpenMP directive, runtime scheduling)
       Computes the Multiplication between the vector b and the Triangular Lower Matrix
 	 */
+	register double total=0.0;
+#pragma omp parallel for schedule(runtime) reduction (+:total) num_threads(NB_OF_THREADS)
 	for (register int i = 0; i < N; ++i) {
-		register double total = 0.0;
-#pragma omp parallel for schedule(runtime) reduction (+:total)
+		 total = 0.0;
 		for (register int j = N - 1 - i; j < N; ++j) {
 			total += Mat[i][j] * b[j];
 		}
@@ -200,7 +204,7 @@ int main ( void )
 	unsigned long long av ;
 	unsigned int exp ;
 
-	printf ("number of threads %d\n", omp_get_max_threads ()) ;
+	printf ("number of threads %d\n", NB_OF_THREADS) ;
 
 	/* rdtsc: read the cycle counter */
 	start = _rdtsc () ;
