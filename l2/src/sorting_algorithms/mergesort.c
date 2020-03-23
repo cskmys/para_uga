@@ -8,6 +8,54 @@
 #include "sorting.h"
 
 /* 
+   Merge two sorted chunks of array T!
+   The two chunks are of size size
+   First chunck starts at T[0], second chunck starts at T[size]
+ */
+void merge (uint64_t *T, const uint64_t size)
+{
+	uint64_t *X = (uint64_t *) malloc (2 * size * sizeof(uint64_t)) ;
+
+	uint64_t i = 0 ;
+	uint64_t j = size ;
+	uint64_t k = 0 ;
+
+	while ((i < size) && (j < 2*size))
+	{
+		if (T[i] < T [j])
+		{
+			X [k] = T [i] ;
+			i = i + 1 ;
+		}
+		else
+		{
+			X [k] = T [j] ;
+			j = j + 1 ;
+		}
+		k = k + 1 ;
+	}
+
+	if (i < size)
+	{
+		for (; i < size; i++, k++)
+		{
+			X [k] = T [i] ;
+		}
+	}
+	else
+	{
+		for (; j < 2*size; j++, k++)
+		{
+			X [k] = T [j] ;
+		}
+	}
+
+	memcpy (T, X, 2*size*sizeof(uint64_t)) ;
+	free (X) ;
+
+	return ;
+}
+/*
    merge sort -- sequential, parallel -- 
  */
 
@@ -18,7 +66,7 @@ void sequential_merge_sort (uint64_t *T, const uint64_t size)
 	return ;
 }
 
-void parallel_merge_sort (uint64_t *T, const uint64_t size)
+void parallel_merge_sort (uint64_t *T, const uint64_t size, const uint64_t blkSiz)
 {
 	/* TODO: parallel implementation of merge sort */
 
@@ -34,13 +82,19 @@ int main (int argc, char **argv)
 
 	/* the program takes one parameter N which is the size of the array to
        be sorted. The array will have size 2^N */
-	if (argc != 2)
+	if (argc != 3)
 	{
-		fprintf (stderr, "merge.run N \n") ;
+		fprintf (stderr, "mergesort.run N(lg(array size)) L(lg(block size)) \n") ;
 		exit (-1) ;
 	}
 
 	uint64_t N = 1 << (atoi(argv[1])) ;
+	uint64_t L = 1 << (atoi(argv[2])) ; // to keep code simple we assume both params are powers of 2
+
+	if(N <= L){
+		fprintf (stderr, "provide an array size > block size \n") ;
+		exit (-1) ;
+	}
 	/* the array to be sorted */
 	uint64_t *X = (uint64_t *) malloc (N * sizeof(uint64_t)) ;
 
@@ -106,7 +160,7 @@ int main (int argc, char **argv)
 
 		start = _rdtsc () ;
 
-		parallel_merge_sort (X, N) ;
+		parallel_merge_sort (X, N, L) ;
 
 		end = _rdtsc () ;
 		experiments [exp] = end - start ;
@@ -147,10 +201,12 @@ int main (int argc, char **argv)
 	memcpy(Z, Y, N * sizeof(uint64_t));
 
 	sequential_merge_sort (Y, N) ;
-	parallel_merge_sort (Z, N) ;
+	parallel_merge_sort (Z, N, L) ;
 
 	if (! are_vector_equals (Y, Z, N)) {
 		fprintf(stderr, "ERROR: sorting with the sequential and the parallel algorithm does not give the same result\n") ;
+		print_array (Y, N) ;
+		print_array (Z, N) ;
 		exit (-1) ;
 	}
 

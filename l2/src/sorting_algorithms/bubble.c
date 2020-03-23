@@ -49,10 +49,12 @@ void parallel_bubble_sort (uint64_t *T, const uint64_t size, const uint64_t blkS
 	int nbUnit = size/blkSiz;
 	while(sorted == 0){
 		sorted = 1;
+#pragma omp parallel for schedule(static) reduction (*:sorted)
 		for(int i = 0; i < nbUnit; ++i){
 			uint64_t *cur = &T[i*blkSiz];
 			sorted *= (int) do_one_bubble(cur, blkSiz);
 		}
+#pragma omp parallel for schedule(static) reduction (*:sorted)
 		for(int i = 0; i < nbUnit - 1; ++i){
 			uint64_t *nxtBlkStart = &T[(i+1)*blkSiz];
 			uint64_t *prevBlkEnd = nxtBlkStart - 1;
@@ -116,19 +118,14 @@ int main (int argc, char **argv)
 		/* verifying that X is properly sorted */
 #ifdef RINIT
 		if (! is_sorted (X, sN))
-		{
-			fprintf(stderr, "ERROR: the sequential sorting of the array failed\n") ;
-			print_array (X, sN) ;
-			exit (-1) ;
-		}
 #else
 		if (! is_sorted_sequence (X, sN))
+#endif
 		{
 			fprintf(stderr, "ERROR: the sequential sorting of the array failed\n") ;
 			print_array (X, sN) ;
 			exit (-1) ;
 		}
-#endif
 	}
 
 	av = average_time() ;
@@ -153,19 +150,14 @@ int main (int argc, char **argv)
 		/* verifying that X is properly sorted */
 #ifdef RINIT
 		if (! is_sorted (X, N))
-		{
-			fprintf(stderr, "ERROR: the parallel sorting of the array failed\n") ;
-			print_array (X, N) ;
-			exit (-1) ;
-		}
 #else
 		if (! is_sorted_sequence (X, N))
+#endif
 		{
 			fprintf(stderr, "ERROR: the parallel sorting of the array failed\n") ;
 			print_array (X, N) ;
 			exit (-1) ;
 		}
-#endif
 
 	}
 

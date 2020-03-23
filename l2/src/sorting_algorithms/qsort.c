@@ -8,7 +8,6 @@
 
 #include "sorting.h"
 
-
 static int compare (const void *x, const void *y)
 {
 	/* cast x and y to uint64_t* before comparing */
@@ -17,9 +16,13 @@ static int compare (const void *x, const void *y)
 	return xVal - yVal;
 }
 
+void do_quick_sort(uint64_t *T, const int size){
+	qsort(T, size, sizeof(uint64_t), compare);
+}
+
 void sequential_qsort_sort (uint64_t *T, const int size)
 {
-	qsort(T, size, sizeof(uint64_t), compare);
+	do_quick_sort(T, size);
 	return ;
 }
 
@@ -74,21 +77,45 @@ void merge (uint64_t *T, const uint64_t size)
 
 
 
-void parallel_qsort_sort (uint64_t *T, const uint64_t size)
+void parallel_qsort_sort (uint64_t *T, const uint64_t size, const uint64_t blkSiz)
 {
-
-	/* TODO: parallel sorting based on libc qsort() function +
-	 * sequential merging */
-
+	int nbUnit = size/blkSiz;
+	uint64_t blockSiz = blkSiz;
+#pragma omp parallel for schedule(static)
+	for(int i = 0; i < nbUnit; ++i){
+		uint64_t *cur = &T[i*blockSiz];
+		do_quick_sort(cur, blockSiz);
+	}
+	while(nbUnit != 0){
+		nbUnit = nbUnit / 2;
+		for(int i = 0; i < nbUnit; ++i){
+			uint64_t *cur = &T[i*(blockSiz*2)];
+			merge(cur, blockSiz);
+		}
+		blockSiz = blockSiz * 2;
+	}
+	return;
 }
 
 
-void parallel_qsort_sort1 (uint64_t *T, const uint64_t size)
+void parallel_qsort_sort1 (uint64_t *T, const uint64_t size, const uint64_t blkSiz)
 {
-
-	/* TODO: parallel sorting based on libc qsort() function +
-	 * PARALLEL merging */
-
+	int nbUnit = size/blkSiz;
+	uint64_t blockSiz = blkSiz;
+#pragma omp parallel for schedule(static)
+	for(int i = 0; i < nbUnit; ++i){
+		uint64_t *cur = &T[i*blockSiz];
+		do_quick_sort(cur, blockSiz);
+	}
+	while(nbUnit != 0){
+		nbUnit = nbUnit / 2;
+#pragma omp parallel for schedule(static)
+		for(int i = 0; i < nbUnit; ++i){
+			uint64_t *cur = &T[i*(blockSiz*2)];
+			merge(cur, blockSiz);
+		}
+		blockSiz = blockSiz * 2;
+	}
 }
 
 
@@ -100,13 +127,19 @@ int main (int argc, char **argv)
 
 	/* the program takes one parameter N which is the size of the array to
        be sorted. The array will have size 2^N */
-	if (argc != 2)
+	if (argc != 3)
 	{
-		fprintf (stderr, "qsort.run N \n") ;
+		fprintf (stderr, "qsort.run N(lg(array size)) L(lg(block size)) \n") ;
 		exit (-1) ;
 	}
 
 	uint64_t N = 1 << (atoi(argv[1])) ;
+	uint64_t L = 1 << (atoi(argv[2])) ; // to keep code simple we assume both params are powers of 2
+
+	if(N <= L){
+		fprintf (stderr, "provide an array size > block size \n") ;
+		exit (-1) ;
+	}
 	/* the array to be sorted */
 	uint64_t *X = (uint64_t *) malloc (N * sizeof(uint64_t)) ;
 
@@ -139,19 +172,14 @@ int main (int argc, char **argv)
 		/* verifying that X is properly sorted */
 #ifdef RINIT
 		if (! is_sorted (X, sN))
-		{
-			fprintf(stderr, "ERROR: the sequential sorting of the array failed\n") ;
-			print_array (X, sN) ;
-			exit (-1) ;
-		}
 #else
 		if (! is_sorted_sequence (X, sN))
+#endif
 		{
 			fprintf(stderr, "ERROR: the sequential sorting of the array failed\n") ;
 			print_array (X, sN) ;
 			exit (-1) ;
 		}
-#endif
 	}
 
 	av = average_time() ;
@@ -169,7 +197,7 @@ int main (int argc, char **argv)
 
 		start = _rdtsc () ;
 
-		parallel_qsort_sort (X, N) ;
+		parallel_qsort_sort (X, N, L) ;
 
 
 		end = _rdtsc () ;
@@ -178,23 +206,20 @@ int main (int argc, char **argv)
 		/* verifying that X is properly sorted */
 #ifdef RINIT
 		if (! is_sorted (X, N))
-		{
-			fprintf(stderr, "ERROR: the parallel sorting of the array failed\n") ;
-			exit (-1) ;
-		}
 #else
 		if (! is_sorted_sequence (X, N))
+#endif
 		{
-			fprintf(stderr, "ERROR: the parallel sorting of the array failed\n") ;
+			fprintf(stderr, "ERROR: the parallel sorting(with sequential merge) of the array failed\n") ;
+			print_array (X, sN) ;
 			exit (-1) ;
 		}
-#endif
 
 
 	}
 
 	av = average_time() ;
-	printf ("\n qsort parallel (merge seq) \t\t %.2lf Mcycles\n\n", (double)av/1000000) ;
+	printf ("\n qsort parallel (merge seq) \t %.2lf Mcycles\n\n", (double)av/1000000) ;
 
 	for (exp = 0 ; exp < NBEXPERIMENTS; exp++)
 	{
@@ -206,7 +231,7 @@ int main (int argc, char **argv)
 
 		start = _rdtsc () ;
 
-		parallel_qsort_sort1 (X, N) ;
+		parallel_qsort_sort1 (X, N, L) ;
 
 		end = _rdtsc () ;
 		experiments [exp] = end - start ;
@@ -214,17 +239,13 @@ int main (int argc, char **argv)
 		/* verifying that X is properly sorted */
 #ifdef RINIT
 		if (! is_sorted (X, N))
-		{
-			fprintf(stderr, "ERROR: the parallel sorting of the array failed\n") ;
-			exit (-1) ;
-		}
 #else
 		if (! is_sorted_sequence (X, N))
+#endif
 		{
-			fprintf(stderr, "ERROR: the parallel sorting of the array failed\n") ;
+			fprintf(stderr, "ERROR: the parallel sorting(with parallel merge) of the array failed\n") ;
 			exit (-1) ;
 		}
-#endif
 
 
 	}
@@ -246,7 +267,7 @@ int main (int argc, char **argv)
 	memcpy(Z, Y, N * sizeof(uint64_t));
 
 	sequential_qsort_sort (Y, N) ;
-	parallel_qsort_sort1 (Z, N) ;
+	parallel_qsort_sort1 (Z, N, L) ;
 
 	if (! are_vector_equals (Y, Z, N)) {
 		fprintf(stderr, "ERROR: sorting with the sequential and the parallel algorithm does not give the same result\n") ;

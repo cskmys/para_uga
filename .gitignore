@@ -9,3 +9,7 @@
 /l2/src/sorting_algorithms/qsort.run
 /l2/src/triangular_matrix/triangular_matrix.run
 /.project
+/.metadata/
+.idea/*
+/*/.cproject
+/*/.project
