@@ -61,15 +61,36 @@ void merge (uint64_t *T, const uint64_t size)
 
 void sequential_merge_sort (uint64_t *T, const uint64_t size)
 {
-	/* TODO: sequential implementation of merge sort */
-
+	if(size < 2){
+		return;
+	}
+	uint64_t mid = size / 2;
+	sequential_merge_sort(T, mid);
+	sequential_merge_sort(&T[mid], mid);
+	merge(T, mid);
 	return ;
+//	uint64_t mergeLstSiz = 2;
+//	while(mergeLstSiz <= size){
+//		for(int i = 0; i < size/mergeLstSiz; ++i){
+//			uint64_t *cur = &T[i*mergeLstSiz];
+//			merge(cur, mergeLstSiz/2);
+//		}
+//		mergeLstSiz = mergeLstSiz * 2;
+//	}
+//	return;
 }
 
-void parallel_merge_sort (uint64_t *T, const uint64_t size, const uint64_t blkSiz)
+void parallel_merge_sort (uint64_t *T, const uint64_t size)
 {
-	/* TODO: parallel implementation of merge sort */
-
+	uint64_t mergeLstSiz = 2;
+	while(mergeLstSiz <= size){
+#pragma omp parallel for schedule(static)
+		for(int i = 0; i < size/mergeLstSiz; ++i){
+			uint64_t *cur = &T[i*mergeLstSiz];
+			merge(cur, mergeLstSiz/2);
+		}
+		mergeLstSiz = mergeLstSiz * 2;
+	}
 	return;
 }
 
@@ -82,23 +103,16 @@ int main (int argc, char **argv)
 
 	/* the program takes one parameter N which is the size of the array to
        be sorted. The array will have size 2^N */
-	if (argc != 3)
+	if (argc != 2)
 	{
-		fprintf (stderr, "mergesort.run N(lg(array size)) L(lg(block size)) \n") ;
+		fprintf (stderr, "mergesort.run N(lg(array size)) \n") ;
 		exit (-1) ;
 	}
 
 	uint64_t N = 1 << (atoi(argv[1])) ;
-	uint64_t L = 1 << (atoi(argv[2])) ; // to keep code simple we assume both params are powers of 2
 
-	if(N <= L){
-		fprintf (stderr, "provide an array size > block size \n") ;
-		exit (-1) ;
-	}
 	/* the array to be sorted */
 	uint64_t *X = (uint64_t *) malloc (N * sizeof(uint64_t)) ;
-
-	printf("--> Sorting an array of size %lu\n",N);
 
 	uint64_t sN = N;
 
@@ -130,19 +144,14 @@ int main (int argc, char **argv)
 		/* verifying that X is properly sorted */
 #ifdef RINIT
 		if (! is_sorted (X, sN))
-		{
-			fprintf(stderr, "ERROR: the sequential sorting of the array failed\n") ;
-			print_array (X, sN) ;
-			exit (-1) ;
-		}
 #else
 		if (! is_sorted_sequence (X, sN))
+#endif
 		{
 			fprintf(stderr, "ERROR: the sequential sorting of the array failed\n") ;
 			print_array (X, sN) ;
 			exit (-1) ;
 		}
-#endif
 	}
 
 	av = average_time() ;
@@ -160,7 +169,7 @@ int main (int argc, char **argv)
 
 		start = _rdtsc () ;
 
-		parallel_merge_sort (X, N, L) ;
+		parallel_merge_sort (X, N) ;
 
 		end = _rdtsc () ;
 		experiments [exp] = end - start ;
@@ -168,17 +177,14 @@ int main (int argc, char **argv)
 		/* verifying that X is properly sorted */
 #ifdef RINIT
 		if (! is_sorted (X, N))
-		{
-			fprintf(stderr, "ERROR: the parallel sorting of the array failed\n") ;
-			exit (-1) ;
-		}
 #else
 		if (! is_sorted_sequence (X, N))
+#endif
 		{
 			fprintf(stderr, "ERROR: the parallel sorting of the array failed\n") ;
+			print_array (X, sN) ;
 			exit (-1) ;
 		}
-#endif
 
 
 	}
@@ -201,7 +207,7 @@ int main (int argc, char **argv)
 	memcpy(Z, Y, N * sizeof(uint64_t));
 
 	sequential_merge_sort (Y, N) ;
-	parallel_merge_sort (Z, N, L) ;
+	parallel_merge_sort (Z, N) ;
 
 	if (! are_vector_equals (Y, Z, N)) {
 		fprintf(stderr, "ERROR: sorting with the sequential and the parallel algorithm does not give the same result\n") ;
