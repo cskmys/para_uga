@@ -13,3 +13,4 @@
 .idea/*
 /*/.cproject
 /*/.project
+*.out
