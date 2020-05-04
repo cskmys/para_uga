@@ -6,6 +6,10 @@
 #define ELE_SIZ(x) sizeof(x[0])
 #define NB_ELE(x) sizeof(x)/ELE_SIZ(x)
 
+#define NB_PROC 4
+#define DIM_A 4
+#define COL_B 4
+
 int getIdx(int nbEle, int idx){
     idx = idx % nbEle;
     if(idx < 0){
@@ -15,71 +19,102 @@ int getIdx(int nbEle, int idx){
 }
 
 int main(int argc, char **argv){
-    int n = 8;
-    int p = n / 4;
+    int  rA = DIM_A;
+    int p = NB_PROC;
 
-    assert(n % p == 0); // important simplification we are making
+    assert(rA % p == 0); // important simplification we are making
+    int cA = rA;
+    mat *A = allocMatMem(rA, cA);
+    randsetMatrix(A, 10, rA, cA);
+    printMatrix(A, rA, cA);
+    
+    int rB = cA;
+    int cB = COL_B;
+    mat *B = allocMatMem(rB, cB);
+    randsetMatrix(B, 15, rB, cB);
+    printMatrix(B, rB, cB);
 
-    mat *A = allocMatMem(n, n);
-    setIdentityMatrix(A, n);
-    mat *B = allocMatMem(n, n);
-    setIdentityMatrix(B, n);
-    mat *C = allocMatMem(n, n);
-    memsetMatrix(C, 0, n, n);
+    int rC = rA;
+    int cC = cB;
+    mat *C = allocMatMem(rC, cC);
+    matrixMul(A, rA, cA, B, rB, cB, C);
+    printMatrix(C, rC, cB);
+    memsetMatrix(C, 0, rC, cC);
+
     
     for(int rank = 0; rank < p; ++rank){
         printf("For Rank: %d\n", rank);
-        mat *sub_A = allocMatMem(n/p, n);
-        int row_idxA = rank * n/p;
+        int rSA = rA / p;
+        int cSA = cA;
+        mat *sub_A = allocMatMem(rSA, cSA);
+        int row_idxA = rank * rA / p;
         printf("sub_A:\n");
-        cpyMatrix(sub_A, A, n, n, row_idxA, n/p);
-        printMatrix(sub_A, n/p, n);
+        cpyMatrix(sub_A, A, rA, cA, row_idxA, rSA);
+        printMatrix(sub_A, rSA, cSA);
 
-        mat *sub_C = allocMatMem(n/p, n);
-        memsetMatrix(sub_C, 0, n/p, n);
+        int rSC = rC / p;
+        int cSC = cC;
+        mat *sub_C = allocMatMem(rSC, cSC);
+        memsetMatrix(sub_C, 0, rSC, cSC);
 
         for(int step = 0; step < p; ++step){
             printf("For Step: %d\n", step);
-            mat *sub_B = allocMatMem(n/p, n);
-            int row_idxB = getIdx(n, (rank * n/p) + (step * n/p));
-            cpyMatrix(sub_B, B, n, n, row_idxB, n/p);
+            int rSB = rB / p;
+            int cSB = cB; 
+            mat *sub_B = allocMatMem(rSB, cSB);
+            int row_idxB = getIdx(rB, (rank * rB/p) - (step * rB/p));
+            cpyMatrix(sub_B, B, rB, cB, row_idxB, rSB);
             printf("sub_B:\n");
-            printMatrix(sub_B, n/p, n);
+            printMatrix(sub_B, rSB, cSB);
 
-            mat *sub_A_A = allocMatMem(n/p, n/p);
-            for (int i = 0; i < n/p; ++i){
-                for (int j = 0; j < n/p; ++j){
-                    int idx = getIdx( n, (((rank - step) % p) * (n/p)) + j);
-                    int sub_arr_idx = (i * n) + idx;
-                    sub_A_A[(i * n/p) + j] = sub_A[sub_arr_idx];
+            int rSAA = rSA;
+            int cSAA = rSB;
+            mat *sub_A_A = allocMatMem(rSAA, cSAA);
+            for (int i = 0; i < rSAA; ++i){
+                for (int j = 0; j < cSAA; ++j){
+                    int idx = getIdx( cSA, (((rank - step) % p) * cSAA) + j);
+                    int sub_arr_idx = (i * cSA) + idx;
+                    sub_A_A[(i * rSAA) + j] = sub_A[sub_arr_idx];
                 }
             }
             printf("sub_A_A:\n");
-            printMatrix(sub_A_A, n/p, n/p);
-            mat *sub_C_Step = allocMatMem(n/p, n);
-            size_t tmp;
-            matrixMul(sub_A_A, n/p, n/p, sub_B, n/p, n, &sub_C_Step, &tmp, &tmp);
+            printMatrix(sub_A_A, rSAA, cSAA);
+
+            int rSCS = rSAA;
+            int cSCS = cSB;
+            mat *sub_C_Step = allocMatMem(rSCS, cSCS);
+
+            matrixMul(sub_A_A, rSAA, cSAA, sub_B, rSB, cSB, sub_C_Step);
             printf("sub_C_Step:\n");
-            printMatrix(sub_C_Step, n/p, n);
+            printMatrix(sub_C_Step, rSCS, cSCS);
 
-            sumMatrix(sub_C, sub_C_Step, n/p, n, sub_C);
+            printf("cur sub_C:\n");
+            printMatrix(sub_C, rSC, cSC);
+            sumMatrix(sub_C, sub_C_Step, rSC, cSC, sub_C);
+            printf("after sum sub_C:\n");
+            printMatrix(sub_C, rSC, cSC);
 
+            free(sub_C_Step);
             free(sub_A_A);
             free(sub_B);
         }
         printf("sub_C:\n");
-        printMatrix(sub_C, n/p, n);
+        printMatrix(sub_C, rSC, cSC);
 
-        size_t cCpyIdx = rank * n/p * n;
-        cpyMatrix(&C[cCpyIdx], sub_C, n/p, n, 0, n/p);
-        
+        printf("cur C:\n");
+        printMatrix(C, rC, cC);
+        int cCpyIdx = rank * (rC / p) * cC;
+        cpyMatrix(&C[cCpyIdx], sub_C, rSC, cSC, 0, rSC);
+        printf("after cpy C:\n");
+        printMatrix(C, rC, cC);
+
         free(sub_C);
         free(sub_A);
     }
     printf("\n");
     
     printf("C:\n");
-    printMatrix(C, n, n);
+    printMatrix(C, rC, cC);
 
     free(A);
     free(B);

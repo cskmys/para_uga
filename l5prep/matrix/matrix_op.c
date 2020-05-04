@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 void chkMatrixValidity(mat *matr, size_t row, size_t col){
     NULL_PTR_CHK(matr);
@@ -33,6 +34,16 @@ void memsetMatrix(mat *matr, int val, size_t row, size_t col){
     for (size_t i = 0; i < row; ++i) {
         for (size_t j = 0; j < col; ++j) {
             matr[(i * col) + j] = val;
+        }
+    }
+}
+
+void randsetMatrix(mat *matr, int maxVal, size_t row, size_t col){
+    srand(time(NULL));
+    chkMatrixValidity(matr, row, col);
+    for (size_t i = 0; i < row; ++i) {
+        for (size_t j = 0; j < col; ++j) {
+            matr[(i * col) + j] = rand() % maxVal;
         }
     }
 }
@@ -76,54 +87,50 @@ void sumMatrix(mat *x, mat *h, size_t r, size_t c, mat *y){
     }
 }
 
-void getMatAEle(mat *matr, size_t col, size_t rowNo, mat *arr){
-    for (size_t j = 0; j < col; ++j) {
-        arr[j] = matr[ (rowNo * col) + j];
-    }
-}
+// void matrixMul(mat *matA, size_t rowA, size_t colA, mat *matB, size_t rowB, size_t colB, mat **matC, size_t *rowC, size_t *colC){
+//     chkMatrixValidity(matA, rowA, colA);
+//     chkMatrixValidity(matB, rowB, colB);
+//     NULL_PTR_CHK(matC);
+//     NULL_PTR_CHK(rowC);
+//     NULL_PTR_CHK(colC);
+//     SAME_PTR_CHK(*matC,(void*)matA);
+//     SAME_PTR_CHK(*matC,(void*)matB);
+//     assert(colA == rowB);
 
-void getMatBEle(mat *matr, size_t nbRow, size_t nbCol, size_t colNo, mat *arr){
-    for (size_t i = 0; i < nbRow; ++i) {
-        arr[i] = matr[ (i * nbCol) + colNo];
-    }
-}
+//     *rowC = rowA;
+//     *colC = colB;
+//     *matC = (void *)allocMatMem(rowA, colB);
 
-int multEle(mat *matA, mat *matB, size_t nbEle){
-    int sum = 0;
-    for (size_t i = 0; i < nbEle; ++i) {
-        sum += (matA[i] * matB[i]);
-    }
-    return sum;
-}
+//     mat *p = *matC;
 
-void matrixMul(mat *matA, size_t rowA, size_t colA, mat *matB, size_t rowB, size_t colB, mat **matC, size_t *rowC, size_t *colC){
+//     for (int c = 0; c < rowA; c++) {
+//       for (int d = 0; d < colB; d++) {
+//         int tot = 0;
+//         for (int k = 0; k < rowB; k++) {
+//           tot = tot + matA[(c * colA) + k] * matB[(k * colB) + d];
+//         }
+//         matC[(c * *colC) + d] = tot;
+//       }
+//     }
+// }
+
+void matrixMul(mat *matA, size_t rowA, size_t colA, mat *matB, size_t rowB, size_t colB, mat *matC){
     chkMatrixValidity(matA, rowA, colA);
     chkMatrixValidity(matB, rowB, colB);
     NULL_PTR_CHK(matC);
-    NULL_PTR_CHK(rowC);
-    NULL_PTR_CHK(colC);
-    SAME_PTR_CHK(*matC,(void*)matA);
-    SAME_PTR_CHK(*matC,(void*)matB);
+    SAME_PTR_CHK(matC,(void*)matA);
+    SAME_PTR_CHK(matC,(void*)matB);
     assert(colA == rowB);
 
-    *rowC = rowA;
-    *colC = colB;
-    *matC = (void *)allocMatMem(rowA, colB);
-
-    mat *p = *matC;
-
-    for (size_t i = 0; i < rowA; ++i) {
-        for (size_t j = 0; j < colB; ++j) {
-            mat *arrA = allocMatMem(1, colA);
-            getMatAEle(matA, colA, i, arrA);
-
-            mat *arrB = allocMatMem(rowB, 1);
-            getMatBEle(matB, rowB, colB, j, arrB);
-
-            p[(i * colB) + j] = multEle(arrA, arrB, colA);
-
-            free(arrA);
-            free(arrB);
+    int colC = colB;
+    for (int c = 0; c < rowA; c++) {
+      for (int d = 0; d < colB; d++) {
+        int tot = 0;
+        for (int k = 0; k < rowB; k++) {
+          tot = tot + matA[(c * colA) + k] * matB[(k * colB) + d];
         }
+        matC[(c * colC) + d] = tot;
+      }
     }
+
 }
