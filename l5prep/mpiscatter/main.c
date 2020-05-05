@@ -57,9 +57,11 @@ void reduce(int size, int rank){
     const int itemsPerProcess = 10;
     const int count = size * itemsPerProcess;
 
-    int *matA = (int*)malloc(count * sizeof(int));
-    int *matB = (int*)malloc(count * sizeof(int));
+    int *matA;
+    int *matB;
     if(rank == 0){
+        matA = (int*)malloc(count * sizeof(int));
+        matB = (int*)malloc(count * sizeof(int));
         mpi_printf("matA: ");
         for (size_t i = 0; i < count; i++){
             matA[i] = i;// rand() % 10;
@@ -80,9 +82,13 @@ void reduce(int size, int rank){
 
     // array to be scattered, nb items/proc to be scattered, data type, where to scatter the data to, how many to be recieved, data type to be recieved, scatterer, proc obj
     MPI_Scatter(matA, itemsPerProcess, MPI_INT, localMatA, itemsPerProcess, MPI_INT, 0, MPI_COMM_WORLD); // 0 -> rank of whoever's 'scattering'
-    free(matA);
+    if(rank == 0){
+        free(matA);
+    }
     MPI_Scatter(matB, itemsPerProcess, MPI_INT, localMatB, itemsPerProcess, MPI_INT, 0, MPI_COMM_WORLD); // 0 -> rank of whoever's 'scattering'
-    free(matB);
+    if(rank == 0){
+        free(matB);
+    }
     
     mpi_printf("localMatA:\n");
     for (size_t i = 0; i < itemsPerProcess; i++){
@@ -109,22 +115,25 @@ void reduce(int size, int rank){
     }
     mpi_printf("\n");
     
-    int *matC = (int*)malloc(count * sizeof(int));
-    memset(matC, 0, count * sizeof(int));
+    int *matC;
+    if(rank == 0){
+        matC = (int*)malloc(count * sizeof(int));
+        memset(matC, 0, count * sizeof(int));
+    }
     
     MPI_Gather(localMatC, itemsPerProcess, MPI_INT, matC, itemsPerProcess, MPI_INT, 0, MPI_COMM_WORLD);
 
-    free(localMatC);
-
     if(rank == 0){
+        free(localMatC);
+
         mpi_printf("matC:\n");
         for (size_t i = 0; i < count; i++){
             mpi_printf("%d ", matC[i]);
         }
         mpi_printf("\n");
-    }
-    free(matC);
 
+        free(matC);
+    }
     return;
 }
 
