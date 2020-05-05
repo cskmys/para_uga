@@ -20,8 +20,8 @@
 #define ELE_SIZ(x) sizeof(x[0])
 #define NB_ELE(x) sizeof(x)/ELE_SIZ(x)
 
-#define DIM_A 4
-#define COL_B 4
+#define DIM_A 16
+#define COL_B 8
 
 int getIdx(int nbEle, int idx){
     idx = idx % nbEle;
@@ -49,12 +49,12 @@ void reduce(int size, int rank){
     if(rank == 0){
         A = allocMatMem(rA, cA);
         // memsetMatrix(A, 0, rA, cA);
-        randsetMatrix(A, USHRT_MAX / 4, rA, cA);
+        randsetMatrix(A, DIM_A, rA, cA);
         mpi_printf("A:\n");
         printMatrix(A, rA, cA);
         
         B = allocMatMem(rB, cB);
-        randsetMatrix(B, USHRT_MAX / 4, rB, cB);
+        randsetMatrix(B, DIM_A, rB, cB);
         mpi_printf("B:\n");
         printMatrix(B, rB, cB);
 
