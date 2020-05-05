@@ -4,9 +4,7 @@
 #include <math.h>
 #include <assert.h>
 
-#ifdef DBG_ON_FD
 #define MAX_NB_PROC 64
-#endif
 
 #define NBEXPERIMENTS    5
 
@@ -20,10 +18,8 @@ typedef double mat;
 #define ELE_SIZ(x) sizeof(x[0])
 #define NB_ELE(x) sizeof(x)/ELE_SIZ(x)
 
-#ifdef DBG_ON_FD
 void init_comm_pipe(int rank);
 void deinit_comm_pipe(int rank);
-#endif
 
 void mpi_printf(const char *fmt, ...);
 void mpi_scr_printf(const char *fmt, ...);

@@ -19,8 +19,6 @@ CHECK_CORRECT=1
 
 EVAL_PERF=1
 
-DBG_ON_FD=0
-
 ifeq ($(EVAL_PERF), 0)
 ifeq ($(CHECK_CORRECT), 0)
 $(error Wrong combination of options. EVAL_PERF or CHECK_CORRECT need to be set)
@@ -37,10 +35,6 @@ $(info Performance is evaluated)
 CONFIG_FLAGS += -DPERF_EVAL
 endif
 
-ifeq ($(DBG_ON_FD), 1)
-$(info mpi_printfs on fd)
-CONFIG_FLAGS += -DDBG_ON_FD
-endif
 
 all: $(EXEC)
 

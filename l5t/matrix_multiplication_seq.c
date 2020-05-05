@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
 
     }
 
-#ifdef PERF_EVAL
+// #ifdef PERF_EVAL
     for (exp = 0 ; exp < NBEXPERIMENTS; exp++)
     {
         if(my_rank == 0){
@@ -107,9 +107,9 @@ int main(int argc, char *argv[])
     }
     
 
-#endif /*PERF_EVAL*/
+// #endif /*PERF_EVAL*/
 
-#ifdef CHECK_CORRECTNESS
+// #ifdef CHECK_CORRECTNESS
     /* running my sequential implementation of the matrix
        multiplication */
     if(my_rank == 0){
@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
         free(C_check);
     }
 
-#endif /* CHECK_CORRECTNESS */
+// #endif /* CHECK_CORRECTNESS */
 
     if(my_rank == 0){
         free(A);

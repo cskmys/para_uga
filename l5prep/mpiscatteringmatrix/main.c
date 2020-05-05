@@ -3,7 +3,7 @@
 #include<stdlib.h>
 #include<string.h>
 #include<stdbool.h>
-#include<math.h>
+#include<limits.h>
 #include<assert.h>
 
 #include<unistd.h>
@@ -49,12 +49,12 @@ void reduce(int size, int rank){
     if(rank == 0){
         A = allocMatMem(rA, cA);
         // memsetMatrix(A, 0, rA, cA);
-        randsetMatrix(A, 9, rA, cA);
+        randsetMatrix(A, USHRT_MAX / 4, rA, cA);
         mpi_printf("A:\n");
         printMatrix(A, rA, cA);
         
         B = allocMatMem(rB, cB);
-        randsetMatrix(B, 15, rB, cB);
+        randsetMatrix(B, USHRT_MAX / 4, rB, cB);
         mpi_printf("B:\n");
         printMatrix(B, rB, cB);
 
