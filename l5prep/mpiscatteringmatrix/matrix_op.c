@@ -4,6 +4,8 @@
 #include <string.h>
 #include <time.h>
 
+#include "utils.h"
+
 void chkMatrixValidity(mat *matr, size_t row, size_t col){
     NULL_PTR_CHK(matr);
     ABOVE_ZERO_CHK(row);
@@ -15,11 +17,11 @@ void printMatrix(mat *buf, size_t row, size_t col){
 
     for (size_t i = 0; i < row; ++i) {
         for (size_t j = 0; j < col; ++j) {
-            printf(PRINT_FMT_SPECIFIER, buf[(i * col) + j]);
+            mpi_printf(PRINT_FMT_SPECIFIER, buf[(i * col) + j]);
         }
-        printf("\n");
+        mpi_printf("\n");
     }
-    printf("\n");
+    mpi_printf("\n");
 }
 
 mat *allocMatMem(size_t r, size_t c){
