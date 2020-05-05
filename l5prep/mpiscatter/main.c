@@ -15,7 +15,6 @@
 #define NB_ELE(x) sizeof(x)/ELE_SIZ(x)
 
 FILE *pFd[4] = {NULL};
-MPI_Op myOp;
     
 void mpi_printf(const char *fmt, ...){
     int rank;
@@ -112,10 +111,9 @@ void reduce(int size, int rank){
     
     int *matC = (int*)malloc(count * sizeof(int));
     memset(matC, 0, count * sizeof(int));
-    matC[0] = rank;
-    matC[1] = itemsPerProcess;
-    // local var to be reduced, the var to which reduced output is written, , data type, operation to be performed, scatterer, com/proc obj
-    MPI_Reduce(localMatC, matC, itemsPerProcess, MPI_INT, myOp, 0, MPI_COMM_WORLD);
+    
+    MPI_Gather(localMatC, itemsPerProcess, MPI_INT, matC, itemsPerProcess, MPI_INT, 0, MPI_COMM_WORLD);
+
     free(localMatC);
 
     if(rank == 0){
@@ -130,29 +128,12 @@ void reduce(int size, int rank){
     return;
 }
 
-void sumMat(int *in, int *inout, int *len, MPI_Datatype *dptr){
-    int *ip = in;
-    int rank = inout[0];
-    int itemsPerProcess = inout[1];
-    int *op = &inout[itemsPerProcess * rank];
-
-    mpi_printf("l: %d, r: %d\n", *len, rank);
-    
-    for (size_t i = 0; i < *len; i++){
-        mpi_printf("%d ", ip[i]);
-        op[i] = ip[i];
-    }
-    mpi_printf("\n");
-}
-
 int main(int argc, char **argv){
     MPI_Init(&argc, &argv);
 
     int size, rank;
     MPI_Comm_size(MPI_COMM_WORLD, &size); // nb processes
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-    MPI_Op_create((MPI_User_function *) sumMat, false, &myOp);
 
     char *pipNam = strdup("./p0");
     pipNam[strlen(pipNam) - 1] = rank + '0';
@@ -167,8 +148,6 @@ int main(int argc, char **argv){
     reduce(size, rank);
 
     fclose(pFd[rank]);
-
-    MPI_Op_free(&myOp);
 
     MPI_Finalize();
     return 0;
