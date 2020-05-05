@@ -6,9 +6,9 @@
 #define ELE_SIZ(x) sizeof(x[0])
 #define NB_ELE(x) sizeof(x)/ELE_SIZ(x)
 
-#define NB_PROC 4
+#define NB_PROC 1
 #define DIM_A 4
-#define COL_B 4
+#define COL_B 1
 
 int getIdx(int nbEle, int idx){
     idx = idx % nbEle;

@@ -43,7 +43,7 @@ void randsetMatrix(mat *matr, int maxVal, size_t row, size_t col){
     chkMatrixValidity(matr, row, col);
     for (size_t i = 0; i < row; ++i) {
         for (size_t j = 0; j < col; ++j) {
-            matr[(i * col) + j] = rand() % maxVal;
+            matr[(i * col) + j] = (mat)(rand() % maxVal);
         }
     }
 }
