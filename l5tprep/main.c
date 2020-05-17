@@ -9,8 +9,9 @@
 #include "fox.h"
 #include "matrix_op.h"
 
+typedef void(*matMulType)(int size, int rank, mat *A, int rA, int cA, mat *B, int rB, int cB, mat *C);
 
-void evaluatePerf(int size, int rank, mat *A, int rA, int cA, mat *B, int rB, int cB, mat *CRing, mat *CSeq){
+void evaluatePerf(int size, int rank, mat *A, int rA, int cA, mat *B, int rB, int cB, matMulType matMul, mat *CRing, mat *CSeq){
 #ifdef PERF_EVAL
     for (int exp = 0; exp < NBEXPERIMENTS; exp++){
         double start;
@@ -18,7 +19,7 @@ void evaluatePerf(int size, int rank, mat *A, int rA, int cA, mat *B, int rB, in
             start = MPI_Wtime();
         }
         
-        ring_matrix_mul(size, rank, A, rA, cA, B, rB, cB, CRing);
+        matMul(size, rank, A, rA, cA, B, rB, cB, CRing);
         
         if(rank == 0){
             set_exp_time(exp, MPI_Wtime() - start);
@@ -27,7 +28,7 @@ void evaluatePerf(int size, int rank, mat *A, int rA, int cA, mat *B, int rB, in
     if(rank == 0){
         
         double av = average_time();
-        printf ("\n ring_matrix_mul \t\t\t %.3lf seconds\n\n", av);
+        printf ("\n matrix_mul \t\t\t %.3lf seconds\n\n", av);
 
         for (int exp = 0 ; exp < NBEXPERIMENTS; exp++){
             double start;
@@ -42,10 +43,10 @@ void evaluatePerf(int size, int rank, mat *A, int rA, int cA, mat *B, int rB, in
 }
 
 
-void checkCorrectness(int size, int rank, mat *A, int rA, int cA, mat *B, int rB, int cB, mat *CRing, mat *CSeq){
+void checkCorrectness(int size, int rank, mat *A, int rA, int cA, mat *B, int rB, int cB, matMulType matMul, mat *CRing, mat *CSeq){
 #ifdef CHECK_CORRECTNESS
-        
-    ring_matrix_mul(size, rank, A, rA, cA, B, rB, cB, CRing);
+
+    matMul(size, rank, A, rA, cA, B, rB, cB, CRing);
 
     if(rank == 0){
         matrixMul(A, rA, cA, B, rB, cB, CSeq);
@@ -60,6 +61,22 @@ void checkCorrectness(int size, int rank, mat *A, int rA, int cA, mat *B, int rB
 #endif
 }
 
+void evaluateRingPerf(int size, int rank, mat *A, int rA, int cA, mat *B, int rB, int cB, mat *CRing, mat *CSeq){
+    evaluatePerf(size, rank, A, rA, cA, B, rB, cB, ring_matrix_mul, CRing, CSeq);
+}
+
+void checkRingCorrectness(int size, int rank, mat *A, int rA, int cA, mat *B, int rB, int cB, mat *CRing, mat *CSeq){
+    checkCorrectness(size, rank, A, rA, cA, B, rB, cB, ring_matrix_mul, CRing, CSeq);
+}
+
+void evaluateFoxPerf(int size, int rank, mat *A, int rA, int cA, mat *B, int rB, int cB, mat *CFox, mat *CSeq){
+    evaluatePerf(size, rank, A, rA, cA, B, rB, cB, fox_matrix_mul, CFox, CSeq);
+}
+
+void checkFoxCorrectness(int size, int rank, mat *A, int rA, int cA, mat *B, int rB, int cB, mat *CFox, mat *CSeq){
+    checkCorrectness(size, rank, A, rA, cA, B, rB, cB, fox_matrix_mul, CFox, CSeq);
+}
+
 int main(int argc, char **argv){
     MPI_Init(&argc, &argv);
 
@@ -69,15 +86,19 @@ int main(int argc, char **argv){
 
     int DIM_A;
     int COL_B;
-    if(argc != 3){
+    int TYPE;
+    if(argc != 4){
         if(rank == 0){
-            printf("usage: %s matrix_A_dimension #_col_in_matrix_B\n", argv[0]);
+            printf("usage: %s type(0: ring, 1:fox, 2:both) matrix_A_dimension #_col_in_matrix_B\n", argv[0]);
         }
         MPI_Finalize();
         return 0;
     } else {
-        DIM_A = atoi(argv[1]);
-        COL_B = atoi(argv[2]);
+        TYPE = atoi(argv[1]);
+        assert(TYPE >= 0);
+        assert(TYPE <= 2);
+        DIM_A = atoi(argv[2]);
+        COL_B = atoi(argv[3]);
     }
     
 #ifdef DBG_ON_FD    
@@ -110,34 +131,46 @@ int main(int argc, char **argv){
         mpi_printf("B:\n");
         printMatrix(B, rB, cB);
 
-        CRing = allocMatMem(rC, cC);
-        memsetMatrix(CRing, 0, rC, cC);
-
-        CFox = allocMatMem(rC, cC);
-        memsetMatrix(CFox, 0, rC, cC);
+        if((TYPE == 0) || (TYPE == 2)){
+            CRing = allocMatMem(rC, cC);
+            memsetMatrix(CRing, 0, rC, cC);
+        }
+        if((TYPE == 1) || (TYPE == 2)){
+            CFox = allocMatMem(rC, cC);
+            memsetMatrix(CFox, 0, rC, cC);
+        }
 
         CSeq = allocMatMem(rC, cC);
         memsetMatrix(CSeq, 0, rC, cC);
     }
 
-    fox_mat_mul_prep(size, rank, A, rA, cA, B, rB, cB, CFox);
-    // evaluatePerf(size, rank, A, rA, cA, B, rB, cB, CRing, CSeq);
-    // checkCorrectness(size, rank, A, rA, cA, B, rB, cB, CRing, CSeq);
+    if((TYPE == 0) || (TYPE == 2)){
+        evaluateRingPerf(size, rank, A, rA, cA, B, rB, cB, CRing, CSeq);
+        checkRingCorrectness(size, rank, A, rA, cA, B, rB, cB, CRing, CSeq);
+    }
+    if((TYPE == 1) || (TYPE == 2)){
+        evaluateFoxPerf(size, rank, A, rA, cA, B, rB, cB, CFox, CSeq);
+        checkFoxCorrectness(size, rank, A, rA, cA, B, rB, cB, CFox, CSeq);
+    }
     
     if(rank == 0){
-        mpi_printf("CRing:\n");
-        printMatrix(CRing, rC, cC);
-
-        mpi_printf("CFox:\n");
-        printMatrix(CFox, rC, cC);
+        if((TYPE == 0) || (TYPE == 2)){
+            mpi_printf("CRing:\n");
+            printMatrix(CRing, rC, cC);
+            free(CRing);
+        }
+        if((TYPE == 1) || (TYPE == 2)){
+            mpi_printf("CFox:\n");
+            printMatrix(CFox, rC, cC);
+            free(CFox);
+        }
 
         mpi_printf("CSeq:\n");    
         printMatrix(CSeq, rC, cC);
+        free(CSeq);
     
         free(A);
-        free(B);
-        free(CSeq);
-        free(CRing);
+        free(B);        
     }
 
 #ifdef DBG_ON_FD
