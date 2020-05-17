@@ -16,5 +16,6 @@ void cpyMatrix(mat *dst, mat *src, size_t row, size_t col, size_t cpyStartRowIdx
 void sumMatrix(mat *x, mat *h, size_t r, size_t c, mat *y);
 void matrixMul(mat *matA, size_t rowA, size_t colA, mat *matB, size_t rowB, size_t colB, mat *matC);
 bool cmpMatrix(mat *matA, size_t rowA, size_t colA, mat *matB, size_t rowB, size_t colB);
+void dotProdMatrix(mat *x, mat *h, size_t r, size_t c, mat *y);
 
 #endif // MATRIX_H

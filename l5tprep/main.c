@@ -102,9 +102,13 @@ int main(int argc, char **argv){
     if(rank == 0){
         A = allocMatMem(rA, cA);
         randsetMatrix(A, DIM_A, rA, cA); 
-        
+        mpi_printf("A:\n");
+        printMatrix(A, rA, cA);
+
         B = allocMatMem(rB, cB);
         randsetMatrix(B, DIM_A, rB, cB);
+        mpi_printf("B:\n");
+        printMatrix(B, rB, cB);
 
         CRing = allocMatMem(rC, cC);
         memsetMatrix(CRing, 0, rC, cC);
@@ -121,12 +125,14 @@ int main(int argc, char **argv){
     // checkCorrectness(size, rank, A, rA, cA, B, rB, cB, CRing, CSeq);
     
     if(rank == 0){
-        // mpi_printf("CRing:\n");
-        // printMatrix(CRing, rC, cC);
-        // mpi_printf("CFox:\n");
-        // printMatrix(CFox, rC, cC);
-        // mpi_printf("CSeq:\n");    
-        // printMatrix(CSeq, rC, cC);
+        mpi_printf("CRing:\n");
+        printMatrix(CRing, rC, cC);
+
+        mpi_printf("CFox:\n");
+        printMatrix(CFox, rC, cC);
+
+        mpi_printf("CSeq:\n");    
+        printMatrix(CSeq, rC, cC);
     
         free(A);
         free(B);

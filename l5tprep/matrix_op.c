@@ -116,3 +116,15 @@ bool cmpMatrix(mat *matA, size_t rowA, size_t colA, mat *matB, size_t rowB, size
     assert(colA == colB);
     return (memcmp(matA, matB, rowA * colA * sizeof(mat)) == 0);
 }
+
+void dotProdMatrix(mat *x, mat *h, size_t r, size_t c, mat *y){
+    chkMatrixValidity(x, r, c);
+    NULL_PTR_CHK(h);
+    NULL_PTR_CHK(y);
+
+    for (size_t i = 0; i < r; ++i) {
+        for (size_t j = 0; j < c; ++j) {
+            y[((i * c) + j)] = x[(i * c) + j] * h[(i * c) + j];
+        }
+    }
+}

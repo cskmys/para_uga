@@ -3,6 +3,7 @@
 
 #include <math.h>
 #include <assert.h>
+#include <mpi.h>
 
 #ifdef DBG_ON_FD
 #define MAX_NB_PROC 64
@@ -12,6 +13,7 @@
 
 typedef double mat;
 #define PRINT_FMT_SPECIFIER "%.2f "
+#define MPI_MAT MPI_DOUBLE
 
 #define UNUSED(x) x = x
 
