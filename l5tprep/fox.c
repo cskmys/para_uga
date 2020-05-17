@@ -140,13 +140,18 @@ void fox_matrix_mul(int size, int rank, mat *A, int rA, int cA, mat *B, int rB, 
         int cSBB = cSB;
         mat *sub_B_B = allocMatMem(rSBB, cSBB);
         memsetMatrix(sub_B_B, 0.0, rSBB, cSBB);
-        int txIdx = (getColRank(comm1dCol[coord2d[1]]) + sizSqrtI - rStep) % sizSqrtI;
-        int rxIdx = (getColRank(comm1dCol[coord2d[1]]) + rStep ) % sizSqrtI;
+        int myColRank = getColRank(comm1dCol[coord2d[1]]);
+        int txIdx = (myColRank + sizSqrtI - rStep) % sizSqrtI;
+        int rxIdx = (myColRank + rStep ) % sizSqrtI;
         
-        MPI_Send(sub_B, rSB * cSB, MPI_MAT, txIdx, 0, comm1dCol[coord2d[1]]);
+        MPI_Request tx_req;
+        MPI_Isend(sub_B, rSB * cSB, MPI_MAT, txIdx, 0, comm1dCol[coord2d[1]], &tx_req);
+        MPI_Request rx_req;
+        MPI_Irecv(sub_B_B, rSBB * cSBB, MPI_MAT, rxIdx, 0, comm1dCol[coord2d[1]], &rx_req);
         MPI_Status status;
-        MPI_Recv(sub_B_B, rSBB * cSBB, MPI_MAT, rxIdx, 0, comm1dCol[coord2d[1]], &status);
-        
+        MPI_Wait(&rx_req, &status);
+        MPI_Wait(&tx_req, &status);
+
         int rSCS = rSA;
         int cSCS = cSB;
         mat *sub_C_Step = allocMatMem(rSCS, cSCS);
