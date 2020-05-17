@@ -47,59 +47,59 @@ void ring_tx_chunk(int nbProc, int myRank, double *buff, int nbArrEle){
     ring_tx(myRank, nbProc, buff, nbArrEle);
 }
 
-// void broadcast_ring(int myRank, int nbArrEle, int nbProc){
-//     if(myRank == 0){
-//         // send 1st to everyone
-//         // then do my computation
-//         // wait for result from everyone
-//         int arr[nbArrEle]; // simple case of nbProc = array size
-//         for (size_t i = 0; i < NB_ELE(arr); i++){
-//             arr[i] = i;
-//         }
-//         mpi_printf(myRank, "inited\n");
-//         for(int gi = 1; gi < nbProc; ++gi){ // cause 0 is txer
-//             ring_stx(myRank, nbProc, (char*)&arr[gi * NB_ELE(arr)/nbProc], NB_ELE(arr)/nbProc * sizeof(int), gi);
-//         }
-//         mpi_printf(myRank, "txed\n");
-//         proc_my_chunk(nbArrEle, nbProc, arr);
-//         mpi_printf(myRank, "proced\n");
+void broadcast_ring(int myRank, int nbArrEle, int nbProc){
+    if(myRank == 0){
+        // send 1st to everyone
+        // then do my computation
+        // wait for result from everyone
+        int arr[nbArrEle]; // simple case of nbProc = array size
+        for (size_t i = 0; i < NB_ELE(arr); i++){
+            arr[i] = i;
+        }
+        mpi_printf(myRank, "inited\n");
+        for(int gi = 1; gi < nbProc; ++gi){ // cause 0 is txer
+            ring_stx(myRank, nbProc, (char*)&arr[gi * NB_ELE(arr)/nbProc], NB_ELE(arr)/nbProc * sizeof(int), gi);
+        }
+        mpi_printf(myRank, "txed\n");
+        proc_my_chunk(nbArrEle, nbProc, arr);
+        mpi_printf(myRank, "proced\n");
 
-//         for(int gi = 1; gi < nbProc; ++gi){ // cause 0 is rxer
-//             int buff[NB_ELE(arr)/nbProc];
-//             int tag;
-//             mpi_printf(myRank, "wait\n");
-//             ring_rx_chunk(nbArrEle, nbProc, myRank, buff, &tag);
-//             assert(tag == 0);
-//             mpi_printf(myRank, "rxed1\n");
-//             int arrIdx = tag * NB_ELE(arr)/nbProc;
-//             memcpy((char*)&arr[arrIdx], buff, sizeof(buff));
-//         }
-//         mpi_printf(myRank, "Array output:");
-//         for (size_t i = 0; i < NB_ELE(arr); i++){
-//             printf("%d ", arr[i]);
-//         }
-//         printf("\n");
-//     } else {
-//         // recieve 1st, 
-//         // if your's do computation and then send
-//         // else just send
-//         while(1){
-//             int buff[nbArrEle/nbProc];
-//             int tag;
-//             mpi_printf(myRank, "wait\n");
-//             ring_rx_chunk(nbArrEle, nbProc, myRank, buff, &tag);
-//             mpi_printf(myRank, "rxed1\n");
+        for(int gi = 1; gi < nbProc; ++gi){ // cause 0 is rxer
+            int buff[NB_ELE(arr)/nbProc];
+            int tag;
+            mpi_printf(myRank, "wait\n");
+            ring_rx_chunk(nbArrEle, nbProc, myRank, buff, &tag);
+            assert(tag == 0);
+            mpi_printf(myRank, "rxed1\n");
+            int arrIdx = tag * NB_ELE(arr)/nbProc;
+            memcpy((char*)&arr[arrIdx], buff, sizeof(buff));
+        }
+        mpi_printf(myRank, "Array output:");
+        for (size_t i = 0; i < NB_ELE(arr); i++){
+            printf("%d ", arr[i]);
+        }
+        printf("\n");
+    } else {
+        // recieve 1st, 
+        // if your's do computation and then send
+        // else just send
+        while(1){
+            int buff[nbArrEle/nbProc];
+            int tag;
+            mpi_printf(myRank, "wait\n");
+            ring_rx_chunk(nbArrEle, nbProc, myRank, buff, &tag);
+            mpi_printf(myRank, "rxed1\n");
 
-//             if(tag == myRank){
-//                 proc_my_chunk(nbArrEle, nbProc, buff);
+            if(tag == myRank){
+                proc_my_chunk(nbArrEle, nbProc, buff);
                 
-//                 ring_tx(myRank, nbProc, (char*)buff, sizeof(buff), 0);
-//                 mpi_printf(myRank, "protxed\n");
-//                 continue;
-//             }
+                ring_tx(myRank, nbProc, (char*)buff, sizeof(buff), 0);
+                mpi_printf(myRank, "protxed\n");
+                continue;
+            }
 
-//             ring_tx(myRank, nbProc, (char*)buff, sizeof(buff), tag);
-//             mpi_printf(myRank, "txed\n");
-//         }
-//     }
-// }
+            ring_tx(myRank, nbProc, (char*)buff, sizeof(buff), tag);
+            mpi_printf(myRank, "txed\n");
+        }
+    }
+}

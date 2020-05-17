@@ -76,6 +76,14 @@ void mpi_printf(const char *fmt, ...){
     return;
 }
 
+int getIdx(int nbEle, int idx){
+    idx = idx % nbEle;
+    if(idx < 0){
+        idx = nbEle + idx;
+    }
+    return idx;
+}
+
 double experiments [NBEXPERIMENTS] ;
 double average_time (void){
     unsigned int i ;

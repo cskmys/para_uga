@@ -1,18 +1,17 @@
 CC = mpicc
-GIVEN_FLAGS = -O2
 PEDANTIC_PARANOID_FREAK = -g3 -O0 -Wall -Wshadow -Wcast-align \
 				-Waggregate-return -Wstrict-prototypes \
 				-Wredundant-decls -Wnested-externs \
 				-Wpointer-arith -Wwrite-strings -finline-functions -Werror
 
 CFLAGS = $(PEDANTIC_PARANOID_FREAK)
-LDFLAGS =
+LDFLAGS = -lm
 
 EXEC = 	main.run
 
 HEADER_FILES = $(wildcard *.h)
 
-EXTRA_SRC = utils.o ring.o matrix_op.o mpi_comm.o
+EXTRA_SRC = cart.o fox.o matrix_op.o mpi_comm.o ring.o utils.o
 
 
 CHECK_CORRECT=1
@@ -45,7 +44,7 @@ endif
 all: $(EXEC)
 
 %.run: %.o $(EXTRA_SRC)
-	$(CC) $(LDFLAGS) -o $@ $^
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 %.o: %.c $(HEADER_FILES)
 	$(CC) -c $(CONFIG_FLAGS) $(CFLAGS) $< -o $@

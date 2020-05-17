@@ -13,6 +13,8 @@
 typedef double mat;
 #define PRINT_FMT_SPECIFIER "%.2f "
 
+#define UNUSED(x) x = x
+
 #define NULL_PTR_CHK(x) assert(x != NULL)
 #define SAME_PTR_CHK(x, y) assert(x != y)
 #define ABOVE_ZERO_CHK(x) assert(x > 0.0)
@@ -32,5 +34,7 @@ void mpi_scr_printf(const char *fmt, ...);
  * experiments vector */
 double average_time( void );
 void set_exp_time(int trial, double tim);
+
+int getIdx(int nbEle, int idx);
 
 #endif // UTILS_H
